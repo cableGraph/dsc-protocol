@@ -10,7 +10,6 @@ import {
 import {DSCEngine} from "../../../src/DSCEngine.sol";
 import {HelperConfig} from "../../../script/HelperConfig.s.sol";
 import {ERC20Mock} from "../ERC20Mock.sol";
-// import {MockV3Aggregator} from "../MockV3Aggregator.sol";
 
 contract DSCEngineTest is Test {
     event CollateralRedeemed(
@@ -52,6 +51,7 @@ contract DSCEngineTest is Test {
 
     address[] public tokenAddresses;
     address[] public priceFeedAddresses;
+    uint8[] public expectedDecimals;
 
     function test_revertsIfTokenLengthDoesntMatchPriceFeeds() public {
         tokenAddresses.push(weth);
@@ -63,7 +63,12 @@ contract DSCEngineTest is Test {
                 .DSCEngine__TokenAddressesAndPriceFeedAddressesLengthMismatch
                 .selector
         );
-        new DSCEngine(tokenAddresses, priceFeedAddresses, address(dsc));
+        new DSCEngine(
+            tokenAddresses,
+            priceFeedAddresses,
+            address(dsc),
+            expectedDecimals
+        );
     }
 
     function test_getTokenAmountFromUsd() public view {
@@ -97,11 +102,13 @@ contract DSCEngineTest is Test {
         vm.expectRevert();
         dscE.getUsdValue(randomToken, 1e18);
     }
+
     function test_getUsdValue_LargeAmount() public view {
         uint256 bigEthAmount = type(uint256).max / 1e18;
         uint256 actualUsd = dscE.getUsdValue(weth, bigEthAmount);
         assertTrue(actualUsd > 0);
     }
+
     function test_getUsdValue_DifferentTokens() public view {
         uint256 ethUsd = dscE.getUsdValue(weth, 1e18);
         uint256 btcUsd = dscE.getUsdValue(wbtc, 1e8);
@@ -123,6 +130,7 @@ contract DSCEngineTest is Test {
         dscE.depositCollateral(weth, 0);
         vm.stopPrank();
     }
+
     function test_revertsIfTokenNotAllowed() public {
         vm.startPrank(USER);
         ERC20Mock randomToken = new ERC20Mock(
@@ -146,6 +154,7 @@ contract DSCEngineTest is Test {
         vm.stopPrank();
         _;
     }
+
     function test_canGetCollateralAndGetAccountInfo()
         public
         depositedCollateral
@@ -359,6 +368,7 @@ contract DSCEngineTest is Test {
         dscE.mintDSC(amountToMint);
         vm.stopPrank();
     }
+
     function test_revertsIfTargetHealthFactorIsNotBroken() public {
         vm.startPrank(USER);
         ERC20Mock(weth).approve(address(dscE), AMOUNT_COLLATERAL);

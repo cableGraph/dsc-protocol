@@ -16,6 +16,7 @@ exclude_lints = [
     "mixed-case-function",
     "screaming-snake-case-immutable",
     "screaming-snake-case-constant",
+    "unwrapped-modifier-logic",
 
 ]
 

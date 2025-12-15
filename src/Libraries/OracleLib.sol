@@ -2,13 +2,11 @@
 
 pragma solidity ^0.8.18;
 
-import {
-    AggregatorV3Interface
-} from "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 /**
  * @title OracleLib
- * @author TrustAutomated
+ * @author CableGraph
  * @notice This library provides utility functions for interacting with price oracles.
  * It checks for stale price Feed Data
  * If the price feed data is stale, the function will revert and render the DSCEngine unusable by design.
@@ -20,19 +18,26 @@ import {
 
 library OracleLib {
     error OracleLib__StalePrice();
+    error OracleLib__InvalidPrice();
+    error OracleLib__StaleRound();
 
-    uint256 private constant STALE_PRICE_TIME = 3 hours;
+    uint256 private constant STALE_PRICE_TIME = 2 hours;
 
-    function StaleCheckLatestRoundData(
-        AggregatorV3Interface priceFeed
-    ) public view returns (uint80, int256, uint256, uint256, uint80) {
-        (
-            uint80 roundId,
-            int256 answer,
-            uint256 startedAt,
-            uint256 updatedAt,
-            uint80 answeredInRound
-        ) = priceFeed.latestRoundData();
+    function StaleCheckLatestRoundData(AggregatorV3Interface priceFeed)
+        public
+        view
+        returns (uint80, int256, uint256, uint256, uint80)
+    {
+        (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound) =
+            priceFeed.latestRoundData();
+
+        if (answer < 0) {
+            revert OracleLib__InvalidPrice();
+        }
+
+        if (answeredInRound < roundId) {
+            revert OracleLib__StaleRound();
+        }
 
         uint256 secondsSince = block.timestamp - updatedAt;
         if (secondsSince > STALE_PRICE_TIME) {

@@ -31,6 +31,7 @@ The **Decentralized StableCoin (DSC)** Protocol is a sophisticated DeFi primitiv
 
 ## 🏗 Architecture
 
+```mermaid
 graph TB
     A[User] --> B[Deposit Collateral]
     B --> C[Health Factor Check]
@@ -47,6 +48,7 @@ graph TB
     L[Chainlink Oracles] --> M[Price Feeds]
     M --> N[Risk Engine]
     N --> C
+```
 
 ### Smart Contract Suite
 
