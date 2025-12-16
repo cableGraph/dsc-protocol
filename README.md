@@ -1,6 +1,6 @@
 
 
-#  Decentralized StableCoin Protocol
+#  DeFi Protocol Core
 
 ![Solidity](https://img.shields.io/badge/Solidity-0.8.18-363636?style=for-the-badge&logo=solidity&logoColor=white)
 ![Foundry](https://img.shields.io/badge/Foundry-Framework-FF6B35?style=for-the-badge&logo=ethereum&logoColor=white)
@@ -8,7 +8,7 @@
 ![DeFi](https://img.shields.io/badge/DeFi-Protocol-8A2BE2?style=for-the-badge&logo=ethereum&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-00D4AA?style=for-the-badge)
 
-**Core Decentralized Stablecoin Infrastructure**
+
 
 ##  Overview
 
