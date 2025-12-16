@@ -8,7 +8,7 @@
 ![DeFi](https://img.shields.io/badge/DeFi-Protocol-8A2BE2?style=for-the-badge&logo=ethereum&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-00D4AA?style=for-the-badge)
 
-**Institutional-Grade Decentralized Stablecoin Infrastructure**
+**Core Decentralized Stablecoin Infrastructure**
 
 ##  Overview
 
