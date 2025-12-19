@@ -85,7 +85,6 @@ contract DSCEngine is ReentrancyGuard {
     uint256 private constant HEALTH_FACTOR_NUMERATOR =
         (LIQUIDATION_THRESHOLD * PRECISION) / LIQUIDATION_PRECISION;
 
-    uint256 public totalDeptCeiling = 10_000_000 * 1e18;
     address public owner = msg.sender;
     bool public paused;
 
@@ -210,10 +209,7 @@ contract DSCEngine is ReentrancyGuard {
 
         account.DSCMinted = newDSCMinted;
         emit DSCMinted(msg.sender, amountDSCToMint);
-        require(
-            i_dsc.totalSupply() + amountDSCToMint <= totalDeptCeiling,
-            "Debt ceiling exceeded"
-        );
+    
 
         /**
          * @dev Using boolean check for defensive programming - handles both
