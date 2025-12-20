@@ -115,10 +115,10 @@ contract DSCEngine is ReentrancyGuard {
     constructor(
         address[] memory tokenAddresses,
         address[] memory priceFeedAddresses,
-        address dscEngine,
+        address dsc,
         uint8[] memory expectedDecimals
     ) {
-        require(dscEngine != address(0), "Invalid DSC address");
+        require(dsc != address(0), "Invalid DSC address");
 
         owner = msg.sender;
 
@@ -143,7 +143,7 @@ contract DSCEngine is ReentrancyGuard {
                 i++;
             }
         }
-        i_dsc = DecentralizedStableCoin(dscEngine);
+        i_dsc = DecentralizedStableCoin(dsc);
     }
 
     //////////////////////////////
@@ -209,7 +209,6 @@ contract DSCEngine is ReentrancyGuard {
 
         account.DSCMinted = newDSCMinted;
         emit DSCMinted(msg.sender, amountDSCToMint);
-    
 
         /**
          * @dev Using boolean check for defensive programming - handles both
@@ -353,8 +352,6 @@ contract DSCEngine is ReentrancyGuard {
         uint256 balance = IERC20(token).balanceOf(address(this));
         IERC20(token).safeTransfer(owner, balance);
     }
-
-    
 
     function pause() external {
         require(msg.sender == owner, "Not owner");
@@ -578,6 +575,12 @@ contract DSCEngine is ReentrancyGuard {
     ) public view returns (uint256) {
         uint8 tokenDecimals = s_tokenDecimals[token];
         uint256 adjustedPrice = _getAdjustedPrice(token);
+
+        if (amount == 0) return 0;
+
+        if (amount > type(uint256).max / adjustedPrice) {
+            return type(uint256).max;
+        }
 
         uint256 normalizedAmount = tokenDecimals == STANDARD_DECIMALS
             ? amount

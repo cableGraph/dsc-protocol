@@ -324,7 +324,7 @@ contract DSCEngineTest is Test {
 
         uint256 collateralValueUsd = dscE.getUsdValue(weth, AMOUNT_COLLATERAL);
 
-        uint256 amountToMint = (collateralValueUsd / 2) + 1;
+        uint256 amountToMint = ((collateralValueUsd * 15) / 10) + 1;
 
         uint256 expectedHealthFactor = dscE.calculateHealthFactor(
             amountToMint,
@@ -348,8 +348,7 @@ contract DSCEngineTest is Test {
         dscE.depositCollateral(weth, AMOUNT_COLLATERAL);
 
         uint256 collateralValueUsd = dscE.getUsdValue(weth, AMOUNT_COLLATERAL);
-        uint256 amountToMint = (collateralValueUsd / 2) + 1;
-
+        uint256 amountToMint = ((collateralValueUsd * 15) / 10) + 1;
         uint256 expectedHealthFactor = dscE.calculateHealthFactor(
             amountToMint,
             collateralValueUsd
