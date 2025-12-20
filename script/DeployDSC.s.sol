@@ -34,17 +34,17 @@ contract DeployDSC is Script {
         expectedDecimals[1] = 8;
 
         vm.startBroadcast(deployerKey);
-        DecentralizedStableCoin dsc = new DecentralizedStableCoin();
+        DecentralizedStableCoin dscToken = new DecentralizedStableCoin();
         DSCEngine dscEngine = new DSCEngine(
             tokenAddresses,
             priceFeedAddresses,
-            address(dsc),
+            address(dscToken),
             expectedDecimals
         );
-        dsc.transferOwnership(address(dscEngine));
+        dscToken.transferOwnership(address(dscEngine));
 
         vm.stopBroadcast();
 
-        return (dsc, dscEngine, config);
+        return (dscToken, dscEngine, config);
     }
 }
