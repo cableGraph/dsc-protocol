@@ -115,10 +115,10 @@ contract DSCEngine is ReentrancyGuard {
     constructor(
         address[] memory tokenAddresses,
         address[] memory priceFeedAddresses,
-        address dsc,
+        address dscToken,
         uint8[] memory expectedDecimals
     ) {
-        require(dsc != address(0), "Invalid DSC address");
+        require(dscToken != address(0), "Invalid DSC address");
 
         owner = msg.sender;
 
@@ -143,7 +143,7 @@ contract DSCEngine is ReentrancyGuard {
                 i++;
             }
         }
-        i_dsc = DecentralizedStableCoin(dsc);
+        i_dsc = DecentralizedStableCoin(dscToken);
     }
 
     //////////////////////////////
