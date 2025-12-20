@@ -115,7 +115,7 @@ contract DSCEngine is ReentrancyGuard {
     constructor(
         address[] memory tokenAddresses,
         address[] memory priceFeedAddresses,
-        address dscEngine,
+        address dscToken,
         uint8[] memory expectedDecimals
     ) {
         require(dscEngine != address(0), "Invalid DSC address");
