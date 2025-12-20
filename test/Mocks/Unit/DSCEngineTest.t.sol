@@ -51,6 +51,7 @@ contract DSCEngineTest is Test {
 
     address[] public tokenAddresses;
     address[] public priceFeedAddresses;
+    uint8[] public expectedDecimals;
 
     function test_revertsIfTokenLengthDoesntMatchPriceFeeds() public {
         tokenAddresses.push(weth);
@@ -62,7 +63,12 @@ contract DSCEngineTest is Test {
                 .DSCEngine__TokenAddressesAndPriceFeedAddressesLengthMismatch
                 .selector
         );
-        new DSCEngine(tokenAddresses, priceFeedAddresses, address(dsc));
+        new DSCEngine(
+            tokenAddresses,
+            priceFeedAddresses,
+            address(dsc),
+            expectedDecimals
+        );
     }
 
     function test_getTokenAmountFromUsd() public view {

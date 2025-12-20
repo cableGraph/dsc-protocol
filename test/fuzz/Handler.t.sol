@@ -15,6 +15,9 @@ contract Handler is Test {
     ERC20Mock wbtc;
     MockV3Aggregator public ethUsdPriceFeed;
 
+    mapping(address => mapping(address => uint256))
+        public userCollateralDeposits;
+
     uint256 public timesMintIsCalled;
     address[] public usersWithCollateralDeposited;
 
@@ -33,7 +36,6 @@ contract Handler is Test {
         );
     }
 
-    // collateralSeed is here to randomly pick between two of our collaterals
     function depositCollateral(
         uint256 collateralSeed,
         uint256 amountCollateral
@@ -54,11 +56,14 @@ contract Handler is Test {
         uint256 amountCollateral
     ) public {
         ERC20Mock collateral = _getCollateralFromSeed(collateralSeed);
+
         uint256 maxCollateralToRedeem = dscE.getCollateralBalanceOfUser(
             address(collateral),
             msg.sender
         );
+
         amountCollateral = bound(amountCollateral, 0, maxCollateralToRedeem);
+
         if (amountCollateral == 0) {
             return;
         }
@@ -75,7 +80,6 @@ contract Handler is Test {
         amount = bound(amount, 1, MAX_DEPOSIT_SIZE);
         (uint256 totalDSCMinted, uint256 collateralValueInUsd) = dscE
             .getAccountInformation(sender);
-        //   when the totalDSCMinted is greater than the maxDSCToMint(this will return)
 
         int256 maxDSCToMint = (int256(collateralValueInUsd) / 2) -
             int256(totalDSCMinted);
@@ -92,11 +96,6 @@ contract Handler is Test {
         vm.stopPrank();
         timesMintIsCalled++;
     }
-
-    // function updateColateralPrice(uint96 newPrice) public {
-    //     int256 newPriceInt = int256(uint256(newPrice));
-    //     ethUsdPriceFeed.updateAnswer(newPriceInt);
-    // }
 
     function _getCollateralFromSeed(
         uint256 collateralSeed

@@ -30,9 +30,8 @@ contract Invariants is StdInvariant, Test {
         excludeContract(address(dscE));
         excludeContract(address(dsc));
     }
+
     function invariant_iprotocalMustHaveMoreValueThanTotalSupply() public view {
-        // we wanna get the value of all the collateral in the protocal
-        // and compare it to all the debt (DSC)
         uint256 totalSupply = dsc.totalSupply();
         uint256 totalWethDeposited = ERC20Mock(weth).balanceOf(address(dscE));
         uint256 totalWbtcDeposited = ERC20Mock(wbtc).balanceOf(address(dscE));
