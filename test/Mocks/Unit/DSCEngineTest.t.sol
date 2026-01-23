@@ -4,14 +4,20 @@ pragma solidity ^0.8.18;
 
 import {Test} from "lib/forge-std/src/Test.sol";
 import {DeployDSC} from "../../../script/DeployDSC.s.sol";
-import {DecentralizedStableCoin} from "../../../src/DecentralizedStableCoin.sol";
-import {DSCEngine} from "../../../src/DSCEngine.sol";
+import {
+    DecentralizedStableCoin
+} from "../../../src/DSCEngineV1/DecentralizedStableCoin.sol";
+import {DSCEngine} from "../../../src/DSCEngineV1/DSCEngine.sol";
 import {HelperConfig} from "../../../script/HelperConfig.s.sol";
 import {ERC20Mock} from "../ERC20Mock.sol";
-// import {MockV3Aggregator} from "../MockV3Aggregator.sol";
 
 contract DSCEngineTest is Test {
-    event CollateralRedeemed(address indexed from, address indexed to, uint256 amount, address token);
+    event CollateralRedeemed(
+        address indexed from,
+        address indexed to,
+        uint256 amount,
+        address token
+    );
 
     DeployDSC deployer;
     DecentralizedStableCoin dsc;
@@ -21,6 +27,7 @@ contract DSCEngineTest is Test {
     address weth;
     address wbtcUsdPriceFeed;
     address wbtc;
+    uint256 deployerKey;
 
     address public USER = makeAddr("user");
     address public EMPTY_USER = makeAddr("emptyUser");
@@ -30,12 +37,45 @@ contract DSCEngineTest is Test {
     uint256 public constant MINT_AMOUNT = 1 ether;
     address public LIQUIDATOR = makeAddr("liquidator");
 
+    // In your DSCEngineTest.t.sol
     function setUp() public {
-        deployer = new DeployDSC();
-        (dsc, dscE, config) = deployer.run();
-        (wethUsdPriceFeed, wbtcUsdPriceFeed, weth, wbtc,) = config.activeNetworkConfig();
+        // Don't use DeployDSC script in tests
+        HelperConfig config = new HelperConfig();
+        (wethUsdPriceFeed, wbtcUsdPriceFeed, weth, wbtc, ) = config
+            .activeNetworkConfig();
+
+        address[] memory tokenAddresses = new address[](2);
+        address[] memory priceFeedAddresses = new address[](2);
+        uint8[] memory expectedDecimals = new uint8[](2);
+
+        tokenAddresses[0] = weth;
+        tokenAddresses[1] = wbtc;
+        priceFeedAddresses[0] = wethUsdPriceFeed;
+        priceFeedAddresses[1] = wbtcUsdPriceFeed;
+        expectedDecimals[0] = 18;
+        expectedDecimals[1] = 8;
+
+        // Deploy contracts directly
+        dsc = new DecentralizedStableCoin();
+        dscE = new DSCEngine(
+            tokenAddresses,
+            priceFeedAddresses,
+            address(dsc),
+            expectedDecimals
+        );
+
+        // Transfer ownership - we are the owner since we deployed dsc
+        dsc.transferOwnership(address(dscE));
+
+        // Store config if needed elsewhere
+        // config = config;
+
+        // Mint tokens
         ERC20Mock(weth).mint(USER, STARTING_ERC20_BALANCE);
         ERC20Mock(weth).mint(EMPTY_USER, STARTING_ERC20_BALANCE);
+
+        // Store weth and wbtc addresses if needed
+        // This way you don't need to store the entire config
     }
     ///////////////////////////////
     /////Constructor Tests////////
@@ -50,8 +90,17 @@ contract DSCEngineTest is Test {
         priceFeedAddresses.push(wethUsdPriceFeed);
         priceFeedAddresses.push(wbtcUsdPriceFeed);
 
-        vm.expectRevert(DSCEngine.DSCEngine__TokenAddressesAndPriceFeedAddressesLengthMismatch.selector);
-        new DSCEngine(tokenAddresses, priceFeedAddresses, address(dsc), expectedDecimals);
+        vm.expectRevert(
+            DSCEngine
+                .DSCEngine__TokenAddressesAndPriceFeedAddressesLengthMismatch
+                .selector
+        );
+        new DSCEngine(
+            tokenAddresses,
+            priceFeedAddresses,
+            address(dsc),
+            expectedDecimals
+        );
     }
 
     function test_getTokenAmountFromUsd() public view {
@@ -104,11 +153,9 @@ contract DSCEngineTest is Test {
     /////////////////////////////////
 
     function test_revertsIfCollateralIsZero() public {
-        //arrange
         vm.startPrank(USER);
         ERC20Mock(weth).approve(address(dscE), AMOUNT_COLLATERAL);
 
-        //act/assert
         vm.expectRevert(DSCEngine.DSCEngine__AmountMustBeAboveZero.selector);
         dscE.depositCollateral(weth, 0);
         vm.stopPrank();
@@ -116,7 +163,12 @@ contract DSCEngineTest is Test {
 
     function test_revertsIfTokenNotAllowed() public {
         vm.startPrank(USER);
-        ERC20Mock randomToken = new ERC20Mock("Fake Token", "FAKE", USER, STARTING_ERC20_BALANCE);
+        ERC20Mock randomToken = new ERC20Mock(
+            "Fake Token",
+            "FAKE",
+            USER,
+            STARTING_ERC20_BALANCE
+        );
 
         randomToken.approve(address(dscE), AMOUNT_COLLATERAL);
         vm.expectRevert(DSCEngine.DSCEngine__TokenNotAllowed.selector);
@@ -133,10 +185,17 @@ contract DSCEngineTest is Test {
         _;
     }
 
-    function test_canGetCollateralAndGetAccountInfo() public depositedCollateral {
-        (uint256 totalDSCMinted, uint256 collateralValueInUsd) = dscE.getAccountInformation(USER);
+    function test_canGetCollateralAndGetAccountInfo()
+        public
+        depositedCollateral
+    {
+        (uint256 totalDSCMinted, uint256 collateralValueInUsd) = dscE
+            .getAccountInformation(USER);
         uint256 expectedTotalDSCMinted = 0;
-        uint256 expectedDepositAmount = dscE.getTokenAmountFromUsd(weth, collateralValueInUsd);
+        uint256 expectedDepositAmount = dscE.getTokenAmountFromUsd(
+            weth,
+            collateralValueInUsd
+        );
         assertEq(totalDSCMinted, expectedTotalDSCMinted);
         assertEq(AMOUNT_COLLATERAL, expectedDepositAmount);
     }
@@ -155,18 +214,28 @@ contract DSCEngineTest is Test {
 
         dscE.depositCollateral(weth, AMOUNT_COLLATERAL);
         vm.stopPrank();
-        //console.log("collateral deposited");
 
         uint256 usdValue = dscE.getAccountCollateralValue(USER);
         uint256 expectedUsdValue = 20000e18;
 
-        assertEq(usdValue, expectedUsdValue, "USD value calculation is incorrect");
+        assertEq(
+            usdValue,
+            expectedUsdValue,
+            "USD value calculation is incorrect"
+        );
     }
 
-    function test_getAccountCollateralValueReturnsZeroWhenNoCollateral() public view {
+    function test_getAccountCollateralValueReturnsZeroWhenNoCollateral()
+        public
+        view
+    {
         uint256 totalValue = dscE.getAccountCollateralValue(EMPTY_USER);
 
-        assertEq(totalValue, 0, "Expected collateral value to be zero for a user with no deposits");
+        assertEq(
+            totalValue,
+            0,
+            "Expected collateral value to be zero for a user with no deposits"
+        );
     }
 
     function testGetAccountCollateralValueHandlesZeroDepositCorrectly() public {
@@ -179,7 +248,11 @@ contract DSCEngineTest is Test {
         uint256 totalValue = dscE.getAccountCollateralValue(USER);
         uint256 expectedUsdValue = 20000e18;
 
-        assertEq(totalValue, expectedUsdValue, "Collateral value should only account for non-zero deposits");
+        assertEq(
+            totalValue,
+            expectedUsdValue,
+            "Collateral value should only account for non-zero deposits"
+        );
     }
 
     function testGetAccountCollateralValueRevertsIfFeedMissing() public {
@@ -202,7 +275,11 @@ contract DSCEngineTest is Test {
         dscE.mintDSC(MINT_AMOUNT);
 
         (, uint256 collateralValueInUsd) = dscE.getAccountInformation(USER);
-        assertGt(collateralValueInUsd, MINT_AMOUNT, "Collateral should exceed debt");
+        assertGt(
+            collateralValueInUsd,
+            MINT_AMOUNT,
+            "Collateral should exceed debt"
+        );
         vm.stopPrank();
     }
 
@@ -219,7 +296,8 @@ contract DSCEngineTest is Test {
         uint256 actualCollateral = dscE.getCollateralDeposited(USER, weth);
         assertEq(actualCollateral, expectedCollateralAfter);
 
-        (uint256 totalDscMinted, uint256 collateralValue) = dscE.getAccountInformation(USER);
+        (uint256 totalDscMinted, uint256 collateralValue) = dscE
+            .getAccountInformation(USER);
         assertEq(totalDscMinted, 0);
         assertGt(collateralValue, 0);
         vm.stopPrank();
@@ -232,7 +310,11 @@ contract DSCEngineTest is Test {
         vm.stopPrank();
 
         uint256 healthFactor = dscE.getHealthFactor(USER);
-        assertEq(healthFactor, type(uint256).max, "Health factor should be max when no debt");
+        assertEq(
+            healthFactor,
+            type(uint256).max,
+            "Health factor should be max when no debt"
+        );
     }
 
     function test_HealthFactorCalculation() public {
@@ -277,9 +359,17 @@ contract DSCEngineTest is Test {
 
         uint256 amountToMint = ((collateralValueUsd * 15) / 10) + 1;
 
-        uint256 expectedHealthFactor = dscE.calculateHealthFactor(amountToMint, collateralValueUsd);
+        uint256 expectedHealthFactor = dscE.calculateHealthFactor(
+            amountToMint,
+            collateralValueUsd
+        );
 
-        vm.expectRevert(abi.encodeWithSelector(DSCEngine.DSCEngine__BreaksHealthFactor.selector, expectedHealthFactor));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                DSCEngine.DSCEngine__BreaksHealthFactor.selector,
+                expectedHealthFactor
+            )
+        );
 
         dscE.mintDSC(amountToMint);
         vm.stopPrank();
@@ -292,8 +382,16 @@ contract DSCEngineTest is Test {
 
         uint256 collateralValueUsd = dscE.getUsdValue(weth, AMOUNT_COLLATERAL);
         uint256 amountToMint = ((collateralValueUsd * 15) / 10) + 1;
-        uint256 expectedHealthFactor = dscE.calculateHealthFactor(amountToMint, collateralValueUsd);
-        vm.expectRevert(abi.encodeWithSelector(DSCEngine.DSCEngine__BreaksHealthFactor.selector, expectedHealthFactor));
+        uint256 expectedHealthFactor = dscE.calculateHealthFactor(
+            amountToMint,
+            collateralValueUsd
+        );
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                DSCEngine.DSCEngine__BreaksHealthFactor.selector,
+                expectedHealthFactor
+            )
+        );
 
         dscE.mintDSC(amountToMint);
         vm.stopPrank();
