@@ -4,9 +4,9 @@ pragma solidity ^0.8.18;
 
 import {Test, console} from "forge-std/Test.sol";
 import {StdInvariant} from "forge-std/StdInvariant.sol";
-import {DSCEngine} from "src/DSCEngine.sol";
+import {DSCEngine} from "src/DSCEngineV1/DSCEngine.sol";
 import {DeployDSC} from "script/DeployDSC.s.sol";
-import {DecentralizedStableCoin} from "src/DecentralizedStableCoin.sol";
+import {DecentralizedStableCoin} from "src/DSCEngineV1/DecentralizedStableCoin.sol";
 import {HelperConfig} from "script/HelperConfig.s.sol";
 import {ERC20Mock} from "../Mocks/ERC20Mock.sol";
 import {Handler} from "./Handler.t.sol";
@@ -23,16 +23,15 @@ contract Invariants is StdInvariant, Test {
     function setUp() external {
         deployer = new DeployDSC();
         (dsc, dscE, config) = deployer.run();
-        (, , weth, wbtc, ) = config.activeNetworkConfig();
+        (,, weth, wbtc,) = config.activeNetworkConfig();
         handler = new Handler(dscE, dsc);
         targetContract(address(handler));
 
         excludeContract(address(dscE));
         excludeContract(address(dsc));
     }
+
     function invariant_iprotocalMustHaveMoreValueThanTotalSupply() public view {
-        // we wanna get the value of all the collateral in the protocal
-        // and compare it to all the debt (DSC)
         uint256 totalSupply = dsc.totalSupply();
         uint256 totalWethDeposited = ERC20Mock(weth).balanceOf(address(dscE));
         uint256 totalWbtcDeposited = ERC20Mock(wbtc).balanceOf(address(dscE));

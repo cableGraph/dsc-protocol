@@ -1,40 +1,27 @@
-# Compiler files
-cache/
+# Rust
+/target/
+**/*.rs.bk
+
+# Foundry
 out/
+cache/
+broadcast/
 
-# Ignores development broadcast logs
-!/broadcast
-/broadcast/*/31337/
-/broadcast/**/dry-run/
+# Node/JavaScript
+node_modules/
+package-lock.json
+yarn.lock
 
-# Docs
-docs/
-
-# Dotenv file
-.env
-
-echo "venv/" >> .gitignore
-echo "__pycache__/" >> .gitignore
-echo "*.pyc" >> .gitignore
-echo ".env" >> .gitignore  
-
-# Python
-venv/
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.python-version
-
-# Environment
+# Environment variables
 .env
 .env.local
-.env.*.local
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
-*~
 
+# OS
+.DS_Store
+Thumbs.db

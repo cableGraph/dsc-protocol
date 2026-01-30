@@ -1,6 +1,6 @@
 
 
-#  Decentralized StableCoin Protocol
+#  DeFi Protocol Core
 
 ![Solidity](https://img.shields.io/badge/Solidity-0.8.18-363636?style=for-the-badge&logo=solidity&logoColor=white)
 ![Foundry](https://img.shields.io/badge/Foundry-Framework-FF6B35?style=for-the-badge&logo=ethereum&logoColor=white)
@@ -8,11 +8,33 @@
 ![DeFi](https://img.shields.io/badge/DeFi-Protocol-8A2BE2?style=for-the-badge&logo=ethereum&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-00D4AA?style=for-the-badge)
 
-**Institutional-Grade Decentralized Stablecoin Infrastructure**
+
 
 ##  Overview
 
-The **Decentralized StableCoin (DSC)** Protocol is a sophisticated DeFi primitive delivering enterprise-ready stablecoin infrastructure. Featuring algorithmic supply control, multi-collateral backing, and real-time risk management, it sets the standard for decentralized financial infrastructure.
+This Protocol is a sophisticated DeFi primitive delivering impermeable stablecoin infrastructure. Featuring algorithmic supply control, multi-collateral backing, and real-time risk management. Inspired by MakerDAO type of protocol Engineering .
+
+## 🏗 Architecture
+
+```mermaid
+graph TB
+    A[User] --> B[Deposit Collateral]
+    B --> C[Health Factor Check]
+    C --> D[Mint DSC]
+    D --> E[Use in DeFi]
+    E --> F[Redeem/Burn]
+    F --> G[Withdraw Collateral]
+    
+    H[Liquidator] --> I[Monitor Positions]
+    I --> J{Liquidation Check}
+    J -->|Health < 1.0| K[Execute Liquidation]
+    J -->|Health > 1.0| I
+    
+    L[Chainlink Oracles] --> M[Price Feeds]
+    M --> N[Risk Engine]
+    N --> C
+```
+
 
 ### Live Deployment
 

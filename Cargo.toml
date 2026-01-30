@@ -1,0 +1,17 @@
+[workspace]
+members = [
+    "backend",
+    "cli",
+    "bindings",
+]
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 3
+
+[profile.dev]
+opt-level = 1
+
+[profile.test]
+opt-level = 1

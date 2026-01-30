@@ -2,9 +2,9 @@
 
 pragma solidity ^0.8.18;
 
-import {Test} from "forge-std/Test.sol";
-import {DSCEngine} from "src/DSCEngine.sol";
-import {DecentralizedStableCoin} from "src/DecentralizedStableCoin.sol";
+import {Test, console} from "forge-std/Test.sol";
+import {DSCEngine} from "src/DSCEngineV1/DSCEngine.sol";
+import {DecentralizedStableCoin} from "src/DSCEngineV1/DecentralizedStableCoin.sol";
 import {ERC20Mock} from "../Mocks/ERC20Mock.sol";
 import {MockV3Aggregator} from "../Mocks/MockV3Aggregator.sol";
 
@@ -14,6 +14,8 @@ contract Handler is Test {
     ERC20Mock weth;
     ERC20Mock wbtc;
     MockV3Aggregator public ethUsdPriceFeed;
+
+    mapping(address => mapping(address => uint256)) public userCollateralDeposits;
 
     uint256 public timesMintIsCalled;
     address[] public usersWithCollateralDeposited;
@@ -28,37 +30,31 @@ contract Handler is Test {
         weth = ERC20Mock(collateralTokens[0]);
         wbtc = ERC20Mock(collateralTokens[1]);
 
-        ethUsdPriceFeed = MockV3Aggregator(
-            dscE.getCollateralTokenPriceFeed(address(weth))
-        );
+        ethUsdPriceFeed = MockV3Aggregator(dscE.getCollateralTokenPriceFeed(address(weth)));
     }
 
-    // collateralSeed is here to randomly pick between two of our collaterals
-    function depositCollateral(
-        uint256 collateralSeed,
-        uint256 amountCollateral
-    ) public {
+    function depositCollateral(uint256 collateralSeed, uint256 amountCollateral) public {
+        console.log("1. depositCollateral called - sender:", msg.sender);
+
         ERC20Mock collateral = _getCollateralFromSeed(collateralSeed);
         amountCollateral = bound(amountCollateral, 1, MAX_DEPOSIT_SIZE);
 
         vm.startPrank(msg.sender);
         collateral.mint(msg.sender, amountCollateral);
+
         collateral.approve(address(dscE), amountCollateral);
         dscE.depositCollateral(address(collateral), amountCollateral);
         vm.stopPrank();
         usersWithCollateralDeposited.push(msg.sender);
     }
 
-    function redeemCollateral(
-        uint256 collateralSeed,
-        uint256 amountCollateral
-    ) public {
+    function redeemCollateral(uint256 collateralSeed, uint256 amountCollateral) public {
         ERC20Mock collateral = _getCollateralFromSeed(collateralSeed);
-        uint256 maxCollateralToRedeem = dscE.getCollateralBalanceOfUser(
-            address(collateral),
-            msg.sender
-        );
+
+        uint256 maxCollateralToRedeem = dscE.getCollateralBalanceOfUser(address(collateral), msg.sender);
+
         amountCollateral = bound(amountCollateral, 0, maxCollateralToRedeem);
+
         if (amountCollateral == 0) {
             return;
         }
@@ -69,20 +65,18 @@ contract Handler is Test {
         if (usersWithCollateralDeposited.length == 0) {
             return;
         }
-        address sender = usersWithCollateralDeposited[
-            addressSeed % usersWithCollateralDeposited.length
-        ];
-        amount = bound(amount, 1, MAX_DEPOSIT_SIZE);
-        (uint256 totalDSCMinted, uint256 collateralValueInUsd) = dscE
-            .getAccountInformation(sender);
-        //   when the totalDSCMinted is greater than the maxDSCToMint(this will return)
+        address sender = usersWithCollateralDeposited[addressSeed % usersWithCollateralDeposited.length];
 
-        int256 maxDSCToMint = (int256(collateralValueInUsd) / 2) -
-            int256(totalDSCMinted);
+        amount = bound(amount, 1, MAX_DEPOSIT_SIZE);
+        (uint256 totalDSCMinted, uint256 collateralValueInUsd) = dscE.getAccountInformation(sender);
+
+        int256 maxDSCToMint = (int256(collateralValueInUsd) / 2) - int256(totalDSCMinted);
+
         if (maxDSCToMint < 0) {
             return;
         }
-        amount = bound(amount, 0, uint256(maxDSCToMint));
+        amount = bound(amount, 1, uint256(maxDSCToMint));
+
         if (amount == 0) {
             return;
         }
@@ -93,17 +87,28 @@ contract Handler is Test {
         timesMintIsCalled++;
     }
 
-    // function updateColateralPrice(uint96 newPrice) public {
-    //     int256 newPriceInt = int256(uint256(newPrice));
-    //     ethUsdPriceFeed.updateAnswer(newPriceInt);
-    // }
-
-    function _getCollateralFromSeed(
-        uint256 collateralSeed
-    ) private view returns (ERC20Mock) {
+    function _getCollateralFromSeed(uint256 collateralSeed) private view returns (ERC20Mock) {
         if (collateralSeed % 2 == 0) {
             return weth;
         }
         return wbtc;
+    }
+
+    // In Handler.sol - add this function
+    function debugAccountInfo(address user)
+        public
+        view
+        returns (
+            uint256 totalDSCMinted,
+            uint256 collateralValueInUsd,
+            uint256 wethBalance,
+            uint256 wbtcBalance,
+            uint256 healthFactor
+        )
+    {
+        (totalDSCMinted, collateralValueInUsd) = dscE.getAccountInformation(user);
+        wethBalance = dscE.getCollateralBalanceOfUser(user, address(weth));
+        wbtcBalance = dscE.getCollateralBalanceOfUser(user, address(wbtc));
+        healthFactor = dscE.getHealthFactor(user);
     }
 }
